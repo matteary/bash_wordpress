@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+function f_deploy(){
+  # This will create or replace a key pair to be used for ssh
+  echo -e "\t\tCreating a key pair..."
+  f_test_key_pair
+
+  # This will create an ec2 security group used for accessing services (SSH, HTTP)
+  echo -e "\t\tCreating security group and adding ports..."
+  f_create_security_group
+  f_allow_ports
+
+  # This will create an ec2 instance
+  echo -e "\t\tCreating instance..."
+  f_run_instances
+  echo -e "\t\t\tNaming instance..."
+  f_tag_resources $(f_get_instance_id) ${v_tag_instance}
+  echo -e "\t\t\tWaiting for instance..."
+  f_wait_for_instance_state "running" $(f_get_instance_id)
+
+  # This will install and enable apache with a generic index.html
+  echo -e "\t\t\tWaiting for SSH access..."
+  f_wait_for_ssh
+  echo -e "\t\tConfiguring Apache on instance..."
+  echo -e "\t\t\tUpdating repos..."
+  f_ubuntu_pkg_update
+  echo -e "\t\t\tInstalling apache..."
+  f_ubuntu_pkg_install_apache2
+  echo -e "\t\t\tCreating index.html..."
+  f_create_index_html
+  echo -e "\t\t\tStarting and Enabling apache service..."
+  f_ubuntu_enable_start_apache2
+
+  # Create RDS Instances
+  echo -e "\t\tCreating RDS Instance..."
+  f_create_db_instance
+  echo -e "\t\t\tWaiting for DB to be ready [updates every $((v_wait_seconds*6)) seconds]..."
+  f_wait_for_db "available"
+
+  # Fetch WordPress
+  echo -e "\t\tInstalling WordPress..."
+  echo -e "\t\t\tFetching WordPress..."
+  f_get_wordpress
+  echo -e "\t\t\tExtracting to /var/www/html/${v_site_name}..."
+  f_extract_wordpress
+
+  # Display ELB DNS Name
+  echo -e "\n\tYou can now access the following website;"
+  echo -e "\n\t\thttp://$(f_get_instance_public_dns $(f_get_instance_id))\n"
+
+  # Display Apache Load Balancing option
+  # echo -e "\n\tYou can test the autoscaler by running this script again with the following options;"
+  # echo -e "\n\t\tIncrease CPUUtilization: ./`basename \"$0\"` --increase-load\n"
+}

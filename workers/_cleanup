@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+function f_cleanup(){
+  if [[ $(find deployments/ -maxdepth 0 -empty -exec echo empty \;) == "empty" ]]; then
+    echo -e "\tNo deployments were found. Exiting...\n"
+    exit 1
+  else
+    echo -e "\tThe following deployments were found, which would you like to delete?\n"
+    num=1
+    for i in $(ls ${_srcDir}/deployments); do
+      echo -e "\t\t${num}: $i"
+      num=$((num+1))
+    done
+    echo -e "\n"
+    read -p "        Selection: " choice
+    num=1
+    for i in $(ls ${_srcDir}/deployments); do
+      if [ ${num} -eq ${choice} ]; then
+        echo -e "\n"
+        read -p "        You have selected ${i}, do you wish to continue? [Y/n] " yn
+        while true; do
+          case $yn in
+            [Yy]* )
+              v_key=${i}
+
+              . ${_srcDir}/variables/global
+              # The following steps will restore back to a clean environment
+              echo -e "\t\tDeleting key pair..."
+              f_delete_key_pair
+              echo -e "\t\tTerminating instances..."
+              f_terminate_instances
+              echo -e "\t\t\tWaiting for instance to terminate..."
+              f_wait_for_instance_terminated $(f_get_instance_id)
+              echo -e "\t\tDeleting security group...\n"
+              f_delete_security_group
+              echo -e "\t\tDeleting RDS instance..."
+              f_delete_db_instance "${project}-${v_key}"
+              echo -e "\t\t\tWaiting for DB deleting..."
+              f_wait_for_db "deleting"
+              rm -rf ${_srcDir}/deployments/${i}
+              echo -e "\tFinished cleanup of deployment ${i}. Exiting...\n"
+              break
+            ;;
+            [Nn]* )
+              echo -e "\tExiting...\n"
+              break
+            ;;
+            * ) read -p "        Invalid Input, please answer [Y/n]: " yn ;;
+          esac
+        done
+      fi
+    done
+  fi
+}

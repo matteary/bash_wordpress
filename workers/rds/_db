@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+function f_create_db_instance(){
+  aws rds create-db-instance --db-name ${v_db_name} --db-instance-identifier "${v_project}-${v_key}" --engine ${v_db_engine} --db-instance-class ${v_db_instance_type} --allocated-storage ${v_db_size_in_gb} --master-username ${v_db_user} --master-user-password ${v_db_password} --availability-zone $(f_get_instance_az) >> ${v_db_params}
+}
+
+function f_get_db_state(){
+  aws rds describe-db-instances --db-instance-identifier "${v_project}-${v_key}" --query "DBInstances[].DBInstanceStatus" --output text
+}
+
+function f_wait_for_db(){
+  while true; do
+    until [ "${v_db_state}" == "${1}" ]; do
+      sleep $((v_wait_seconds*6))
+      local v_db_state=$(f_get_db_state)
+      echo -e "\t\t\t\t$(f_get_db_state)"
+    done
+    break
+  done
+}
+
+function f_delete_db_instance(){
+  aws rds delete-db-instance --db-instance-identifier ${1} --skip-final-snapshot
+}

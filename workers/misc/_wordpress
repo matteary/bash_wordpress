@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+function f_get_wordpress(){
+  f_ssh_client_send_command "wget https://wordpress.org/latest.tar.gz"
+}
+
+function f_extract_wordpress(){
+  f_ssh_client_send_command "tar -xzvf latest.tar.gz --directory /var/www/html/"
+  f_ssh_client_send_command "chown www-data. -R /var/www/html/wordpress/"
+}

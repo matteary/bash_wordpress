@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+## Global
+v_project="bash-wordpress"
+v_params=${_srcDir}/deployments/${v_key}/${v_project}_params.json
+v_db_params=${_srcDir}/deployments/${v_key}/db_${v_project}_params.json
+v_instance=${_srcDir}/deployments/${v_key}/${v_project}_instance
+v_key_name="${v_project}-${v_key}-keypair"
+v_region="us-west-2"
+v_wait_seconds=5
+v_ssh_user=ubuntu
+
+## EC2 Variables
+v_security_group="${v_project}-${v_key}-security-group"
+v_security_group_desc="My $(echo ${v_project}-${v_key}) Security Group"
+v_instance_name="${v_project}-${v_key}"
+v_instance_type="t2.micro"
+v_ami_id="ami-efd0428f"
+#v_ami_id="ami-3e32f05e"
+v_allowed_ports="22 80"
+v_allowed_nets="0.0.0.0/0"
+v_ip_proto="tcp"
+v_ami_name="${v_key}-ami"
+
+# ELB Variables
+v_elb_name="${v_project}-${v_key}-elb"
+
+# Autoscaler Variables
+v_autoscaler_config="${v_project}-${v_key}-autoscaler_launch_config"
+v_autoscaler_group="${v_project}-${v_key}-autoscaler-group"
+v_autoscaler_group_min_size=1
+v_autoscaler_group_max_size=10
+v_autoscaler_group_desired_size=2
+v_autoscaler_policy_name_scalein="Scale In"
+v_autoscaler_policy_name_scaleout="Scale Out"
+v_autoscaler_policy_scalein="MetricIntervalUpperBound=-10.0,ScalingAdjustment=-2 MetricIntervalUpperBound=0.0,MetricIntervalLowerBound=-10.0,ScalingAdjustment=-1"
+v_autoscaler_policy_scaleout="MetricIntervalLowerBound=20.0,ScalingAdjustment=2 MetricIntervalUpperBound=20.0,MetricIntervalLowerBound=0.0,ScalingAdjustment=1"
+
+# CloudWatch Variables
+v_cloudwatch_scaleout_alarm_name="Advanced Autoscale Workbook Scale Out"
+v_cloudwatch_scaleout_period=60
+v_cloudwatch_scaleout_threshold=40
+v_cloudwatch_scaleout_eval_periods=1
+v_cloudwatch_scaleout_metric_name="CPUUtilization"
+v_cloudwatch_scaleout_comp_operator="GreaterThanOrEqualToThreshold"
+v_cloudwatch_scaleout_namespace="AWS/EC2"
+v_cloudwatch_scalein_alarm_name="Advanced Autoscale Workbook Scale In"
+v_cloudwatch_scalein_period=120
+v_cloudwatch_scalein_threshold=30
+v_cloudwatch_scalein_eval_periods=1
+v_cloudwatch_scalein_metric_name="CPUUtilization"
+v_cloudwatch_scalein_comp_operator="LessThanOrEqualToThreshold"
+v_cloudwatch_scalein_namespace="AWS/EC2"
+
+# Create Tags
+v_tag_instance="Key=Name,Value=${v_instance_name}"
+v_tag_image="Key=Name,Value=${v_ami_name}"
+v_tag_elb="Key=Name,Value=${v_elb_name}"
+v_tag_autoscaler_group="Key=Name,Value=${v_project}-${v_key}"
+
+# WordPress
+v_site_name="${v_project}"
+
+# RDS
+v_db_name=$(echo ${v_project} | sed "s|-||g")
+v_db_instance_type="db.${v_instance_type}"
+v_db_engine="mysql"
+v_db_size_in_gb="5"
+v_db_user="dbuser"
+v_db_password="password"

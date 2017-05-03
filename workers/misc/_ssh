@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+f_ssh_client_send_command(){
+  ssh_command=$1
+  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@$(f_get_instance_public_dns $(f_get_instance_id)) ${ssh_command}
+}
