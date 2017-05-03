@@ -5,9 +5,10 @@
 
 `cd ~ && git clone https://github.com/matteary/bash_wordpress.git`
 
-`cd advanced_autoscaling_workbook`
+`cd bash_wordpress`
 
-<p>Usage: ./advanced_autoscaling.sh [ --deploy | --cleanup | --increase-traffic | --help ]</p>
+<p>Usage: ./bash_wordpress.sh [ --deploy | --cleanup | --help ]</p>
 
 <p>--deploy&emsp;&emsp;&emsp;&emsp;&emsp;Deploys the Bash WordPress environment</p>
 <p>--cleanup&emsp;&emsp;&emsp;&emsp; Tears down the Bash Word{ress environment</p>
+
