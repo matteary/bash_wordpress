@@ -2,20 +2,21 @@
 
 function f_deploy(){
   # This will create or replace a key pair to be used for ssh
-  echo -e "\t\tCreating a key pair..."
+  echo -e "\t\tCreating a key pair [${v_key_name}]..."
   f_test_key_pair
 
   # This will create an ec2 security group used for accessing services (SSH, HTTP)
-  echo -e "\t\tCreating security group and adding ports..."
+  echo -e "\t\tCreating security group [${v_security_group}]..."
   f_create_security_group
+  echo -e "\t\t\tAdding ports [${v_allowed_ports}]..."
   f_allow_ports
 
   # This will create an ec2 instance
   echo -e "\t\tCreating instance..."
   f_run_instances
-  echo -e "\t\t\tNaming instance..."
+  echo -e "\t\t\tNaming instance [$(f_get_instance_id)]..."
   f_tag_resources $(f_get_instance_id) ${v_tag_instance}
-  echo -e "\t\t\tWaiting for instance..."
+  echo -e "\t\t\tWaiting for instance [$(f_get_instance_id)]..."
   f_wait_for_instance_state "running" $(f_get_instance_id)
 
   # This will install and enable apache with a generic index.html
@@ -34,8 +35,8 @@ function f_deploy(){
   # Create RDS Instances
   echo -e "\t\tCreating RDS Instance..."
   f_create_db_instance
-  echo -e "\t\t\tWaiting for DB to be ready [updates every $((v_wait_seconds*6)) seconds]..."
-  f_wait_for_db "available"
+  echo -e "\t\t\tWaiting for DB to be ready [updates every $((v_wait_seconds*12)) seconds]..."
+  f_wait_for_db "available" 12
 
   # Fetch WordPress
   echo -e "\t\tInstalling WordPress..."
@@ -43,10 +44,20 @@ function f_deploy(){
   f_get_wordpress
   echo -e "\t\t\tExtracting to /var/www/html/${v_site_name}..."
   f_extract_wordpress
+  echo -e "\t\t\tMap to DB..."
+  f_attach_to_rds
+  echo -e "\t\t\tCreate virtualhost..."
+  f_create_virtualhost
 
+  # Create ELB for autoscaler-group
+  echo -e "\t\tCreating ELB..."
+  f_create_elb
+  echo -e "\t\t\t[$(f_get_elb_dnsname)]"
+  
   # Display ELB DNS Name
   echo -e "\n\tYou can now access the following website;"
-  echo -e "\n\t\thttp://$(f_get_instance_public_dns $(f_get_instance_id))\n"
+  echo -e "\n\t\thttp://$(f_get_instance_public_dns $(f_get_instance_id))"
+  echo -e "\t\thttp://$(f_get_elb_dnsname)\n"
 
   # Display Apache Load Balancing option
   # echo -e "\n\tYou can test the autoscaler by running this script again with the following options;"

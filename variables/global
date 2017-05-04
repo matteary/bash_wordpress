@@ -22,7 +22,7 @@ v_ip_proto="tcp"
 v_ami_name="${v_key}-ami"
 
 # ELB Variables
-v_elb_name="${v_project}-${v_key}-elb"
+v_elb_name="${v_project}-${v_key}"
 
 # Autoscaler Variables
 v_autoscaler_config="${v_project}-${v_key}-autoscaler_launch_config"
@@ -59,6 +59,7 @@ v_tag_autoscaler_group="Key=Name,Value=${v_project}-${v_key}"
 
 # WordPress
 v_site_name="${v_project}"
+v_server_admin_email="webmaster@localhost"
 
 # RDS
 v_db_name=$(echo ${v_project} | sed "s|-||g")

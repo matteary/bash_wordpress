@@ -1,10 +1,130 @@
 #!/usr/bin/env bash
 
 function f_get_wordpress(){
-  f_ssh_client_send_command "wget https://wordpress.org/latest.tar.gz"
+  f_ssh_client_send_command "sudo wget https://wordpress.org/latest.tar.gz &> /dev/null"
 }
 
 function f_extract_wordpress(){
-  f_ssh_client_send_command "tar -xzvf latest.tar.gz --directory /var/www/html/"
-  f_ssh_client_send_command "chown www-data. -R /var/www/html/wordpress/"
+  f_ssh_client_send_command "sudo tar -xzvf latest.tar.gz --directory /var/www/html/ >> /dev/null"
+  f_ssh_client_send_command "sudo chown www-data. -R /var/www/html/wordpress/ >> /dev/null"
+}
+
+function f_add_virtualhost(){
+  f_create_virtualhost
+  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /etc/apache2/sites-available/${v_project}.conf < ${_srcDir}/deployments/${v_project}.conf >> /dev/null
+  f_ssh_client_send_command "sudo service apache2 reload"
+}
+
+function f_attach_to_rds(){
+  f_create_wpconfig
+  f_ssh_client_send_command "sudo mv /var/www/html/wordpress /var/www/html/${v_project}"
+  f_ssh_client_send_command "sudo touch /var/www/html/${v_project}/wp-config.php >> /dev/null && sudo chown www-data. /var/www/html/${v_project}/wp-config.php"
+  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /var/www/html/${v_project}/wp-config.php < ${_srcDir}/deployments/${v_key}/wp-config.php >> /dev/null
+}
+
+function f_create_virtualhost(){
+echo -e "<VirtualHost *:80>
+	ServerName $(f_get_elb_dnsname)
+
+	ServerAdmin ${v_server_admin_email}
+	DocumentRoot /var/www/html/${v_project}
+
+	ErrorLog \${APACHE_LOG_DIR}/${v_project}-error.log
+	CustomLog \${APACHE_LOG_DIR}/${v_project}-access.log combined
+
+</VirtualHost>
+" >> ${_srcDir}/deployments/${v_key}/${v_project}.conf
+}
+
+function f_create_wpconfig(){
+echo -e "<?php
+/**
+ * The base configuration for WordPress
+ *
+ * The wp-config.php creation script uses this file during the
+ * installation. You don't have to use the web site, you can
+ * copy this file to "wp-config.php" and fill in the values.
+ *
+ * This file contains the following configurations:
+ *
+ * * MySQL settings
+ * * Secret keys
+ * * Database table prefix
+ * * ABSPATH
+ *
+ * @link https://codex.wordpress.org/Editing_wp-config.php
+ *
+ * @package WordPress
+ */
+
+// ** MySQL settings - You can get this info from your web host ** //
+/** The name of the database for WordPress */
+define('DB_NAME', '${v_db_name}');
+
+/** MySQL database username */
+define('DB_USER', '${v_db_user}');
+
+/** MySQL database password */
+define('DB_PASSWORD', '${v_db_password}');
+
+/** MySQL hostname */
+define('DB_HOST', 'localhost');
+
+/** Database Charset to use in creating database tables. */
+define('DB_CHARSET', 'utf8');
+
+/** The Database Collate type. Don't change this if in doubt. */
+define('DB_COLLATE', '');
+
+/**#@+
+ * Authentication Unique Keys and Salts.
+ *
+ * Change these to different unique phrases!
+ * You can generate these using the {@link https://api.wordpress.org/secret-key/1.1/salt/ WordPress.org secret-key service}
+ * You can change these at any point in time to invalidate all existing cookies. This will force all users to have to log in again.
+ *
+ * @since 2.6.0
+ */
+define('AUTH_KEY',         'put your unique phrase here');
+define('SECURE_AUTH_KEY',  'put your unique phrase here');
+define('LOGGED_IN_KEY',    'put your unique phrase here');
+define('NONCE_KEY',        'put your unique phrase here');
+define('AUTH_SALT',        'put your unique phrase here');
+define('SECURE_AUTH_SALT', 'put your unique phrase here');
+define('LOGGED_IN_SALT',   'put your unique phrase here');
+define('NONCE_SALT',       'put your unique phrase here');
+
+/**#@-*/
+
+/**
+ * WordPress Database Table prefix.
+ *
+ * You can have multiple installations in one database if you give each
+ * a unique prefix. Only numbers, letters, and underscores please!
+ */
+\$table_prefix  = 'wp_';
+
+/**
+ * For developers: WordPress debugging mode.
+ *
+ * Change this to true to enable the display of notices during development.
+ * It is strongly recommended that plugin and theme developers use WP_DEBUG
+ * in their development environments.
+ *
+ * For information on other constants that can be used for debugging,
+ * visit the Codex.
+ *
+ * @link https://codex.wordpress.org/Debugging_in_WordPress
+ */
+define('WP_DEBUG', false);
+
+/* That's all, stop editing! Happy blogging. */
+
+/** Absolute path to the WordPress directory. */
+if ( !defined('ABSPATH') )
+	define('ABSPATH', dirname(__FILE__) . '/');
+
+/** Sets up WordPress vars and included files. */
+require_once(ABSPATH . 'wp-settings.php');
+" > ${_srcDir}/deployments/${v_key}/wp-config.php
 }

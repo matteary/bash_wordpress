@@ -5,7 +5,6 @@
 #
 
 ## Variables
-_project="EC2 Linux and WordPress"
 _srcDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 v_key=$(echo -e "$(printf '%04x' $RANDOM $RANDOM)")
 
@@ -22,7 +21,7 @@ while true; do
   case $1 in
     --[Dd][Ee][Pp][Ll][Oo][Yy] )
       mkdir ${_srcDir}/deployments/${v_key}
-      echo -e "\n\tDeploying ${_project} environment...\n"
+      echo -e "\n\tDeploying [${v_key}] environment...\n"
       echo -e "\t\tThis might take a few minutes, go grab a cofee.\n"
       f_deploy
       break

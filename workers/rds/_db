@@ -8,10 +8,16 @@ function f_get_db_state(){
   aws rds describe-db-instances --db-instance-identifier "${v_project}-${v_key}" --query "DBInstances[].DBInstanceStatus" --output text
 }
 
+function f_get_db_endpoint(){
+  aws rds describe-db-instances --db-instance-identifier "${v_project}-${v_key}" --query "DBInstances[].Endpoint[].[Address]" --output text
+}
+
 function f_wait_for_db(){
+  desired_state=$1
+  multiplier=$2
   while true; do
-    until [ "${v_db_state}" == "${1}" ]; do
-      sleep $((v_wait_seconds*6))
+    until [ "${v_db_state}" == "${desired_state}" ]; do
+      sleep $((v_wait_seconds*${multiplier}))
       local v_db_state=$(f_get_db_state)
       echo -e "\t\t\t\t$(f_get_db_state)"
     done
@@ -20,5 +26,5 @@ function f_wait_for_db(){
 }
 
 function f_delete_db_instance(){
-  aws rds delete-db-instance --db-instance-identifier ${1} --skip-final-snapshot
+  aws rds delete-db-instance --db-instance-identifier "${1}" --skip-final-snapshot >> /dev/null
 }

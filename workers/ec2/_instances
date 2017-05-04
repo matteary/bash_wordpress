@@ -76,20 +76,6 @@ function f_terminate_instances(){
   aws ec2 terminate-instances --instance-ids $(f_get_instance_id) >> /dev/null
 }
 
-function f_test_ssh(){
-  exec 3>&2
-  exec 2> /dev/null
-  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` echo ""
-  if [ $? -eq 0 ]; then
-    _ssh_availability=1
-    echo -e "\t\t\t\tSSH Available"
-  else
-    _ssh_availability=0
-    echo -e "\t\t\t\tpending"
-  fi
-  exec 2>&3
-}
-
 function f_wait_for_image_state(){
   while true; do
     until [ "$(f_get_image_state)" == "${1}" ]; do
@@ -127,16 +113,6 @@ function f_wait_for_snapshot_state(){
       sleep ${v_wait_seconds}
       local v_snapshot_state=$(f_get_snapshot_state) > /dev/null
       echo -e "\t\t\t\tpending"
-    done
-    break
-  done
-}
-
-function f_wait_for_ssh(){
-  while true; do
-    until [[ $_ssh_availability -eq 1 ]]; do
-      sleep ${v_wait_seconds}
-      f_test_ssh
     done
     break
   done
