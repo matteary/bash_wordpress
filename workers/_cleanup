@@ -32,15 +32,26 @@ function f_cleanup(){
               f_terminate_instances
               echo -e "\t\t\tWaiting for instance to terminate..."
               f_wait_for_instance_terminated $(f_get_instance_id)
-              echo -e "\t\tDeleting ELB..."
-              f_delete_elb
               echo -e "\t\tDeleting RDS instance..."
               f_delete_db_instance "${v_project}-${v_key}"
               echo -e "\t\t\tWaiting for DB deleting..."
               f_wait_for_db "deleting" 1
+              f_deregister_image
+              echo -e "\t\t\tDeleting AMI snapshot..."
+              f_delete_snapshots "${v_project}-ami-${v_key}"
+              echo -e "\t\tDeleting ELB..."
+              f_delete_elb
+              echo -e "\t\tDeleting CloudWatch alarms..."
+              f_delete_cloudwatch_alarms "${v_cloudwatch_alarm_name_scaleout}-${v_key} ${v_cloudwatch_alarm_name_scalein}-${v_key}"
+              echo -e "\t\tDeleting Autoscaler..."
+              echo -e "\t\t\tDeleting Autoscale policies..."
+              f_delete_autoscaler_policy "${v_autoscaler_policy_name_scaleout}-${v_key}" "${v_project}-${v_key}-autoscaler-group"
+              f_delete_autoscaler_policy "${v_autoscaler_policy_name_scalein}-${v_key}" "${v_project}-${v_key}-autoscaler-group"
+              f_delete_autoscaler_group "${v_project}-${v_key}-autoscaler-group"
+              f_delete_autoscaler_config
+              echo -e "\t\tDeleting security group..."
               rm -rf ${_srcDir}/deployments/${i}
               sleep ${v_wait_seconds}
-              echo -e "\t\tDeleting security group...\n"
               f_delete_security_group
               echo -e "\tFinished cleanup of deployment ${i}. Exiting...\n"
               break

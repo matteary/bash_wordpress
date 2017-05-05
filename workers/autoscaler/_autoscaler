@@ -13,13 +13,13 @@ function f_create_autoscaler_policy(){
 }
 
 function f_delete_autoscaler_group(){
-  aws autoscaling update-auto-scaling-group --auto-scaling-group-name ${v_autoscaler_group} --max-size 0 --min-size 0
-  if [ "$(f_get_autoscaler_instances)" != '' ]; then
+  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "${1}" --max-size 0 --min-size 0 >> /dev/null
+  if [ "$(f_get_autoscaler_instances \"${1}\")" != '' ]; then
     echo -e "\t\t\tWaiting for Autoscaler instances to terminate..."
-    f_wait_for_autoscaler_instance_terminations
+    f_wait_for_autoscaler_instance_terminations "${1}"
   fi
   sleep ${v_wait_seconds}
-  aws autoscaling delete-auto-scaling-group --auto-scaling-group-name ${v_autoscaler_group}
+  aws autoscaling delete-auto-scaling-group --auto-scaling-group-name "${1}" >> /dev/null
   #aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${v_autoscaler_group}
   # Need a way to detect instance terminations
   #sleep 20
@@ -35,11 +35,11 @@ function f_delete_autoscaler_config(){
 }
 
 function f_delete_autoscaler_policy(){
-  aws autoscaling delete-policy --policy-name "${1}" --auto-scaling-group-name ${v_autoscaler_group}
+  aws autoscaling delete-policy --policy-name "${1}" --auto-scaling-group-name "${2}"
 }
 
 function f_get_autoscaler_instances(){
-  aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${v_autoscaler_group} --query "AutoScalingGroups[].Instances[].[InstanceId]" --output text
+  aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "${1}" --query "AutoScalingGroups[].Instances[].[InstanceId]" --output text
 }
 
 function f_get_autoscaler_group_state(){
@@ -63,7 +63,7 @@ function f_wait_for_autoscaler_group_deletion(){
 }
 
 function f_wait_for_autoscaler_instance_terminations(){
-  for i in `f_get_autoscaler_instances`; do
+  for i in $(f_get_autoscaler_instances "${1}"); do
     f_wait_for_instance_state "terminated" ${i}
   done
 }

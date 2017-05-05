@@ -11,7 +11,8 @@ function f_extract_wordpress(){
 
 function f_add_virtualhost(){
   f_create_virtualhost
-  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /etc/apache2/sites-available/${v_project}.conf < ${_srcDir}/deployments/${v_project}.conf >> /dev/null
+  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /etc/apache2/sites-available/${v_project}.conf < ${_srcDir}/deployments/${v_key}/${v_project}.conf >> /dev/null
+  f_ssh_client_send_command "sudo a2ensite ${v_project}.conf"
   f_ssh_client_send_command "sudo service apache2 reload"
 }
 
@@ -23,8 +24,9 @@ function f_attach_to_rds(){
 }
 
 function f_create_virtualhost(){
+servername=$(f_get_elb_dnsname)
 echo -e "<VirtualHost *:80>
-	ServerName $(f_get_elb_dnsname)
+	ServerName ${servername}
 
 	ServerAdmin ${v_server_admin_email}
 	DocumentRoot /var/www/html/${v_project}

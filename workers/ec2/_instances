@@ -25,7 +25,7 @@ function f_get_image_id(){
 }
 
 function f_get_image_snapshots(){
-  aws ec2 describe-images --owner self --query "Images[?Name=='${v_ami_name}'].BlockDeviceMappings[].Ebs[].SnapshotId[]" --output text
+  aws ec2 describe-images --owner self --query "Images[?Name=='${1}'].BlockDeviceMappings[].Ebs[].SnapshotId[]" --output text
 }
 
 function f_get_image_state(){
