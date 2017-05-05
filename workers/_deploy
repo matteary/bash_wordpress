@@ -52,12 +52,12 @@ function f_deploy(){
   # This will create an Amazon Machine Image (AMI) for use with an ELB
   echo -e "\t\tCreating AMI..."
   f_create_image
-  echo -e "\t\t\tWaiting for AMI creation..."
-  f_wait_for_image_state "available"
+  echo -e "\t\t\tWaiting for AMI creation [updates every $((v_wait_seconds*6))]..."
+  f_wait_for_image_state "available" 6
   echo -e "\t\t\tTagging AMI..."
   f_tag_resources $(f_get_image_id) ${v_tag_image}
-  echo -e "\t\t\tWaiting for Snapshot creation..."
-  f_wait_for_snapshot_state "completed"
+  echo -e "\t\t\tWaiting for Snapshot creation [updates every $((v_wait_seconds*6))]..."
+  f_wait_for_snapshot_state "completed" 6
   echo -e "\t\t\tTagging Snapshots..."
   f_tag_resources $(f_get_image_snapshots) ${v_tag_image}
 

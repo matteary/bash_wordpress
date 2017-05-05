@@ -57,7 +57,7 @@ function f_get_instance_az(){
 }
 
 function f_get_snapshot_state(){
-  aws ec2 describe-snapshots --owner self --snapshot-ids $(f_get_image_snapshots) --query "Snapshots[].[State]" --output text
+  aws ec2 describe-snapshots --owner self --snapshot-ids $(f_get_image_snapshots ${v_ami_name}) --query "Snapshots[].[State]" --output text
 }
 
 function f_get_vpc_id(){
@@ -77,9 +77,10 @@ function f_terminate_instances(){
 }
 
 function f_wait_for_image_state(){
+  multiplier=$2
   while true; do
     until [ "$(f_get_image_state)" == "${1}" ]; do
-      sleep ${v_wait_seconds}
+      sleep $((v_wait_seconds*${multiplier}))
       echo -e "\t\t\t\t$(f_get_image_state)"
     done
     break
@@ -108,9 +109,10 @@ function f_wait_for_instance_terminated(){
 }
 
 function f_wait_for_snapshot_state(){
+  multiplier=$2
   while true; do
     until [ "${v_snapshot_state}" == "${1}" ]; do
-      sleep ${v_wait_seconds}
+      sleep $((v_wait_seconds*${multiplier}))
       local v_snapshot_state=$(f_get_snapshot_state) > /dev/null
       echo -e "\t\t\t\tpending"
     done
