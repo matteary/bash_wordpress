@@ -28,26 +28,26 @@ function f_cleanup(){
               echo -e "\t\tRemoving deployment [${v_key}]\n"
               echo -e "\t\tDeleting key pair..."
               f_delete_key_pair
-              echo -e "\t\tTerminating instances..."
-              f_terminate_instances
-              echo -e "\t\t\tWaiting for instance to terminate..."
-              f_wait_for_instance_terminated $(f_get_instance_id)
+              #echo -e "\t\tTerminating instances..."
+              #f_terminate_instances
+              #echo -e "\t\t\tWaiting for instance/s to terminate..."
+              #f_wait_for_instance_terminated $(f_get_instance_id)
               echo -e "\t\tDeleting RDS instance..."
               f_delete_db_instance "${v_project}-${v_key}"
               echo -e "\t\t\tWaiting for DB deleting..."
               f_wait_for_db "deleting" 1
+              echo -e "\t\tDeleting AMI..."
               f_deregister_image
-              echo -e "\t\t\tDeleting AMI snapshot..."
-              f_delete_snapshots "${v_project}-ami-${v_key}"
+              #f_delete_snapshots "${v_project}-ami-${v_key}"
               echo -e "\t\tDeleting ELB..."
               f_delete_elb
               echo -e "\t\tDeleting CloudWatch alarms..."
               f_delete_cloudwatch_alarms "${v_cloudwatch_alarm_name_scaleout}-${v_key} ${v_cloudwatch_alarm_name_scalein}-${v_key}"
               echo -e "\t\tDeleting Autoscaler..."
-              echo -e "\t\t\tDeleting Autoscale policies..."
+              echo -e "\t\t\tDeleting policies..."
               f_delete_autoscaler_policy "${v_autoscaler_policy_name_scaleout}-${v_key}" "${v_project}-${v_key}-autoscaler-group"
               f_delete_autoscaler_policy "${v_autoscaler_policy_name_scalein}-${v_key}" "${v_project}-${v_key}-autoscaler-group"
-              f_delete_autoscaler_group "${v_project}-${v_key}-autoscaler-group"
+              echo -e "\t\t\tDeleting group..."
               f_delete_autoscaler_config
               echo -e "\t\tDeleting security group..."
               rm -rf ${_srcDir}/deployments/${i}

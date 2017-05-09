@@ -13,6 +13,27 @@ function f_get_elb_dnsname(){
   aws elb describe-load-balancers --query "LoadBalancerDescriptions[?LoadBalancerName=='${v_elb_name}'].[DNSName]" --output text
 }
 
+function f_get_elb_status(){
+  for i in $(aws elb describe-instance-health --load-balancer-name ${v_elb_name} --query "InstanceStates[].State" --output text); do
+    echo "${i}"
+  done
+}
+
 function f_delete_elb(){
   aws elb delete-load-balancer --load-balancer-name ${v_elb_name}
+}
+
+function f_wait_for_elb(){
+  while true; do
+    until [ "${v_inservice}" == "True" ]; do
+      for i in $(echo "$(f_get_elb_status)"); do
+        if [[ "${i}" == 'InService' ]]; then
+          local v_inservice="True"
+        fi
+        echo -e "\t\t\t\t${i}"
+      done
+      sleep ${v_wait_seconds}
+    done
+    break
+  done
 }

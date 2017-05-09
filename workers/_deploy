@@ -10,6 +10,8 @@ function f_deploy(){
   f_create_security_group
   echo -e "\t\t\tAdding ports [${v_allowed_ports}]..."
   f_allow_ports
+  echo -e "\t\t\tAdding self..."
+  f_allow_self
 
   # This will create an ec2 instance
   echo -e "\t\tCreating instance..."
@@ -27,16 +29,18 @@ function f_deploy(){
   f_ubuntu_pkg_update
   echo -e "\t\t\tInstalling apache..."
   f_ubuntu_pkg_install_apache2
-  echo -e "\t\t\tCreating index.html..."
-  f_create_index_html
-  echo -e "\t\t\tStarting and Enabling apache service..."
-  f_ubuntu_enable_start_apache2
+  echo -e "\t\t\tInstalling apache modules..."
+  f_ubuntu_pkg_install_modules
+  #echo -e "\t\t\tCreating index.html..."
+  #f_create_index_html
 
   # Create RDS Instances
   echo -e "\t\tCreating RDS Instance..."
   f_create_db_instance
   echo -e "\t\t\tWaiting for DB to be ready [updates every $((v_wait_seconds*12)) seconds]..."
   f_wait_for_db "available" 12
+  echo -e "\t\t\tModifying Security Group..."
+  f_modify_db_security_group
 
   # Fetch WordPress
   echo -e "\t\tInstalling WordPress..."
@@ -47,7 +51,11 @@ function f_deploy(){
   echo -e "\t\t\tMap to DB..."
   f_attach_to_rds
   echo -e "\t\t\tCreate virtualhost..."
-  f_create_virtualhost
+  f_add_virtualhost
+  echo -e "\t\t\tRemoving default virtualhost..."
+  f_remove_default_virtualhost
+  echo -e "\t\t\tStarting and Enabling apache service..."
+  f_ubuntu_enable_start_apache2
 
   # This will create an Amazon Machine Image (AMI) for use with an ELB
   echo -e "\t\tCreating AMI..."
@@ -58,8 +66,8 @@ function f_deploy(){
   f_tag_resources $(f_get_image_id) ${v_tag_image}
   echo -e "\t\t\tWaiting for Snapshot creation [updates every $((v_wait_seconds*6))]..."
   f_wait_for_snapshot_state "completed" 6
-  echo -e "\t\t\tTagging Snapshots..."
-  f_tag_resources $(f_get_image_snapshots) ${v_tag_image}
+  #echo -e "\t\t\tTagging Snapshots..."
+  #f_tag_resources $(f_get_image_snapshots) ${v_tag_image}
 
   # This will create an ELB to front our webserver
   echo -e "\t\tCreating ELB..."
@@ -84,12 +92,16 @@ function f_deploy(){
   f_create_cloudwatch_alarms "${v_cloudwatch_scalein_alarm_name}-${v_key}" "${v_cloudwatch_scalein_metric_name}" "${v_cloudwatch_scalein_namespace}" "${v_cloudwatch_scalein_period}" "${v_cloudwatch_scalein_threshold}" "${v_cloudwatch_scalein_comp_operator}" "${v_cloudwatch_scalein_eval_periods}" "$(cat ${_srcDir}/deployments/${v_key}/as_policy_scalein.arn)"
 
   # Terminate uneeded instance
-  #echo -e "\t\tTerminating original instance"
-  #f_terminate_instances
+  echo -e "\t\tTerminating base instance..."
+  f_terminate_instances
+
+  # Wait for ELB Availability
+  echo -e "\t\tWaiting for ELB to be in service..."
+  f_wait_for_elb
 
   # Display ELB DNS Name
-  echo -e "\n\tYou can now access the following website;"
-  echo -e "\n\t\thttp://$(f_get_instance_public_dns $(f_get_instance_id))"
+  echo -e "\n\tYou can now access the following website;\n"
+  #echo -e "\n\t\thttp://$(f_get_instance_public_dns $(f_get_instance_id))"
   echo -e "\t\thttp://$(f_get_elb_dnsname)\n"
 
   # Display Apache Load Balancing option

@@ -11,9 +11,9 @@ function f_extract_wordpress(){
 
 function f_add_virtualhost(){
   f_create_virtualhost
-  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /etc/apache2/sites-available/${v_project}.conf < ${_srcDir}/deployments/${v_key}/${v_project}.conf >> /dev/null
-  f_ssh_client_send_command "sudo a2ensite ${v_project}.conf"
-  f_ssh_client_send_command "sudo service apache2 reload"
+  ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@$(f_get_instance_public_dns $(f_get_instance_id)) sudo tee /etc/apache2/sites-available/${v_project}.conf < ${_srcDir}/deployments/${v_key}/${v_project}.conf >> /dev/null
+  f_ssh_client_send_command "sudo a2ensite ${v_project}.conf >> /dev/null"
+  #f_ssh_client_send_command "sudo service apache2 reload >> /dev/null"
 }
 
 function f_attach_to_rds(){
@@ -23,29 +23,44 @@ function f_attach_to_rds(){
   ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /var/www/html/${v_project}/wp-config.php < ${_srcDir}/deployments/${v_key}/wp-config.php >> /dev/null
 }
 
+function f_remove_default_virtualhost(){
+  f_ssh_client_send_command "sudo rm -rf /etc/apache2/sites-enabled/000-default.conf"
+}
+
 function f_create_virtualhost(){
-servername=$(f_get_elb_dnsname)
 echo -e "<VirtualHost *:80>
-	ServerName ${servername}
+  ServerAdmin ${v_server_admin_email}
 
-	ServerAdmin ${v_server_admin_email}
-	DocumentRoot /var/www/html/${v_project}
+  DocumentRoot /var/www/html/${v_project}
 
-	ErrorLog \${APACHE_LOG_DIR}/${v_project}-error.log
-	CustomLog \${APACHE_LOG_DIR}/${v_project}-access.log combined
+  <Directory /var/www/html/${v_project}>
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride All
+    DirectoryIndex index.php
+    Order allow,deny
+    allow from all
+  </Directory>
 
-</VirtualHost>
-" >> ${_srcDir}/deployments/${v_key}/${v_project}.conf
+  <Directory /var/www/html/${v_project}/wp-content>
+    Options FollowSymLinks
+    Order allow,deny
+    Allow from all
+  </Directory>
+
+  ErrorLog \${APACHE_LOG_DIR}/${v_project}-error.log
+  CustomLog \${APACHE_LOG_DIR}/${v_project}-access.log combined
+</VirtualHost>" >> ${_srcDir}/deployments/${v_key}/${v_project}.conf
 }
 
 function f_create_wpconfig(){
+rds_instance=$(f_get_db_endpoint)
 echo -e "<?php
 /**
  * The base configuration for WordPress
  *
  * The wp-config.php creation script uses this file during the
  * installation. You don't have to use the web site, you can
- * copy this file to "wp-config.php" and fill in the values.
+ * copy this file to \"wp-config.php\" and fill in the values.
  *
  * This file contains the following configurations:
  *
@@ -70,7 +85,7 @@ define('DB_USER', '${v_db_user}');
 define('DB_PASSWORD', '${v_db_password}');
 
 /** MySQL hostname */
-define('DB_HOST', 'localhost');
+define('DB_HOST', '${rds_instance}');
 
 /** Database Charset to use in creating database tables. */
 define('DB_CHARSET', 'utf8');

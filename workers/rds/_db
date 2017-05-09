@@ -4,6 +4,10 @@ function f_create_db_instance(){
   aws rds create-db-instance --db-name ${v_db_name} --db-instance-identifier "${v_project}-${v_key}" --engine ${v_db_engine} --db-instance-class ${v_db_instance_type} --allocated-storage ${v_db_size_in_gb} --master-username ${v_db_user} --master-user-password ${v_db_password} --availability-zone $(f_get_instance_az) >> ${v_db_params}
 }
 
+function f_modify_db_security_group(){
+  aws rds modify-db-instance --vpc-security-group-ids $(f_get_security_group_id) --db-instance-identifier "${v_project}-${v_key}" >> /dev/null
+}
+
 function f_get_db_state(){
   aws rds describe-db-instances --db-instance-identifier "${v_project}-${v_key}" --query "DBInstances[].DBInstanceStatus" --output text
 }

@@ -1,2 +1,4 @@
 cache/ec2_linux_and_wordpress_params.json
 deployments
+*/.DS_Store
+.DS_Store

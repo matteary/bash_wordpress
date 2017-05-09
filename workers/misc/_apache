@@ -2,21 +2,21 @@
 
 function f_ubuntu_pkg_update(){
   #ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo apt-get update >> /dev/null
-  f_ssh_client_send_command "sudo apt-get update >> /dev/null"
+  f_ssh_client_send_command "sudo DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null"
+  sleep 3
 }
 
 function f_ubuntu_pkg_install_apache2(){
-  sleep 3
   #ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo yum update >> /dev/null
   #ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo apt-get install apache2 -y >> /dev/null
-  f_ssh_client_send_command "sudo DEBIAN_FRONTEND=noninteractive apt-get install apache2 -y >> /dev/null"
+  f_ssh_client_send_command "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 > /dev/null"
 }
 
 function f_create_index_html(){
   ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo tee /var/www/html/index.html < ${_srcDir}/files/index.html >> /dev/null
   #ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo chown www-data. -R /var/www/html >> /dev/null
   #f_ssh_client_send_command "sudo tee /var/www/html/index.html < ${_srcDir}/files/index.html >> /dev/null"
-  f_ssh_client_send_command "sudo chown www-data. -R /var/www/html >> /dev/null"
+  f_ssh_client_send_command "sudo chown www-data. -R /var/www/html > /dev/null"
 
 }
 
@@ -24,4 +24,8 @@ function f_ubuntu_enable_start_apache2(){
   #ssh -i ~/.ssh/${v_key_name}.pem -o "StrictHostKeyChecking no" ${v_ssh_user}@`f_get_instance_public_dns $(f_get_instance_id)` sudo update-rc.d apache2 enable && sudo service apache2 start >> /dev/null
   f_ssh_client_send_command "sudo update-rc.d apache2 enable &> /dev/null"
   f_ssh_client_send_command "sudo service apache2 start &> /dev/null"
+}
+
+function f_ubuntu_pkg_install_modules(){
+  f_ssh_client_send_command "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-client php libapache2-mod-php php-mysql php-curl php-gd php-pear php-imagick php-imap php-mcrypt php-recode php-tidy php-xmlrpc &> /dev/null"
 }
