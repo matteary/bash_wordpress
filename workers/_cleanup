@@ -45,8 +45,9 @@ function f_cleanup(){
               f_delete_cloudwatch_alarms "${v_cloudwatch_alarm_name_scaleout}-${v_key} ${v_cloudwatch_alarm_name_scalein}-${v_key}"
               echo -e "\t\tDeleting Autoscaler..."
               echo -e "\t\t\tDeleting policies..."
-              f_delete_autoscaler_policy "${v_autoscaler_policy_name_scaleout}-${v_key}" "${v_project}-${v_key}-autoscaler-group"
-              f_delete_autoscaler_policy "${v_autoscaler_policy_name_scalein}-${v_key}" "${v_project}-${v_key}-autoscaler-group"
+              for i in $(echo ${!v_autoscaler_policy_name_scale*}); do
+                f_delete_autoscaler_policy "${!i}_${v_key}" "${v_project}-${v_key}-autoscaler-group"
+              done
               echo -e "\t\t\tDeleting group..."
               f_delete_autoscaler_config
               echo -e "\t\tDeleting security group..."

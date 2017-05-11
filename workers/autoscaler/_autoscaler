@@ -20,10 +20,6 @@ function f_delete_autoscaler_group(){
   fi
   sleep ${v_wait_seconds}
   aws autoscaling delete-auto-scaling-group --auto-scaling-group-name "${1}" >> /dev/null
-  #aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${v_autoscaler_group}
-  # Need a way to detect instance terminations
-  #sleep 20
-  #aws autoscaling delete-launch-configuration --launch-configuration-name ${v_autoscaler_config}
 }
 
 function f_delete_autoscaler_config(){
@@ -42,8 +38,13 @@ function f_get_autoscaler_instances(){
   aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "${1}" --query "AutoScalingGroups[].Instances[].[InstanceId]" --output text
 }
 
+# Returns a 0 for any state detected that is "not deleted"
 function f_get_autoscaler_group_state(){
-  aws autoscaling describe-auto-scaling-groups --query "AutoScalingGroups[?AutoScalingGroupName=='${v_autoscaler_group}']" --output text
+  if [[ $(aws autoscaling describe-auto-scaling-groups --query "AutoScalingGroups[?AutoScalingGroupName=='${v_autoscaler_group}']" --output text) != '' ]]; then
+    as_group_state='0'
+  else
+    as_group_state='1'
+  fi
 }
 
 function f_wait_for_autoscaler_group_deletion(){
@@ -51,7 +52,7 @@ function f_wait_for_autoscaler_group_deletion(){
     v_as_group_state="null"
     exec 3>&2
     exec 2> /dev/null
-    until [ "${v_as_group_state}" == '' ]; do
+    until [ "${v_as_group_state}" == '1' ]; do
       local v_as_group_state="$(f_get_autoscaler_group_state)"
       f_delete_autoscaler_group
       echo -e "\t\t\t\tpending"
